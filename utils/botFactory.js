@@ -1,12 +1,10 @@
 const mineflayer = require('mineflayer')
 const loadingBar = require('./loadingBar')
-const pathfinder = require('mineflayer-pathfinder').pathfinder
-const Movements = require('mineflayer-pathfinder').Movements
-const { GoalNear } = require('mineflayer-pathfinder').goals
 
 let botArgs = {
     host: 'localhost',
-    port: '25565'
+    port: '25565',
+    version: '1.21.1'
 }
 
 class MCBot {
@@ -14,6 +12,7 @@ class MCBot {
         this.username = username;
         this.host = botArgs["host"]
         this.port = botArgs["port"]
+        this.version = botArgs["version"]
 
         this.initBot()
     }
@@ -45,11 +44,6 @@ class MCBot {
             setTimeout(() => this.initBot(), 10000)
         })
 
-        /*this.bot.on('spawn', async () =>{
-            console.log(`[${this.username}] Spawned in`)
-            //this.bot.chat('Hello!')
-        }) */
-
         this.bot.on('error', async (err) => {
             if (err.code === 'ECONNREFUSED') {
                 console.log(`[${this.username}] Failed to connect to ${err.address}:${err.port}`)
@@ -70,13 +64,6 @@ class MCBot {
                 this.bot.chat(`I picked up ${collected.displayName || "an item"}!`)
             }
         })
-
-        
-/*
-        this.bot.on('chat', async (username, jsonMsg) => {
-            console.log(JSON.stringify(jsonMsg))
-        })
-*/
     }
 
     logOut() {

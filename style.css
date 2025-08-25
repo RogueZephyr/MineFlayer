@@ -1,0 +1,47 @@
+html body {
+    display: block;
+    background-color: rgb(9, 0, 88);
+}
+
+h1, p, header, footer {
+    color: white;
+}
+
+.console-textbox {
+    background-color: #282c34;                                /* Dark background, common for consoles */
+    color: green;                                             /* Light, contrasting text color (e.g., blue or green) */
+    font-family: 'Cascadia Code', 'Fira Code', 'monospace';     /* Monospaced font */
+    font-size: 1em;                                             /* Adjust as needed */
+    padding: 10px;                                              /* Add some internal spacing */
+    border: 1px solid #3e4451;                                /* Subtle border */
+    border-radius: 4px;                                         /* Slightly rounded corners */
+    outline: none;                                              /* Remove default focus outline */
+    resize: vertical;                                           /* Allow vertical resizing for textareas */
+    resize: none;
+}
+
+.console-textbox:focus {
+    border-color: #c678dd;                                     /* Change border color on focus */
+    box-shadow: 0 0 5px #c678dd;                               /* Add a subtle glow on focus */
+}
+
+.console-textbox::placeholder {
+    color: #abb2bf;                                             /* Slightly lighter or different shade for placeholder */
+}
+
+div#console {
+    position: relative;
+    display: block;
+}
+
+div#console::before {
+    content: 'ADMIN:\>';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 99;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    color: green;
+}

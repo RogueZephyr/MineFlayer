@@ -1,5 +1,3 @@
-const mineflayer = require('mineflayer')
-const loadingBar = require('./utils/loadingBar')
 const MCBot = require('./utils/botFactory')
 const readline = require("readline");
 
@@ -57,10 +55,11 @@ function shutdownAllBots() {
             botsDisconnected++;
             if (botsDisconnected === bots.length) {
                 console.log('All bots disconnected. Exiting program.');
-                rl.close();
-                process.exit(0);
+                
             }
         });
         bot.logOut();
+        rl.close();
+        process.exit(0);
     });
 }
