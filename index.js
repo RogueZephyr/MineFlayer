@@ -15,16 +15,10 @@ const rl = readline.createInterface({
     output: process.stdout
 })
 
-function shutdownAllBots() {
-    bots.forEach(bot => {
-        bot.logOut()
-    });
-}
-
 rl.question('How many bots do you want to spawn? ', (answer) =>{
     const botCount = parseInt(answer)
     for (var i = 0; i < botCount; i++) {
-        bots.push(new MCBot(`BOT_${i}`))
+        bots.push(new MCBot(`BOT_${i}`, `300${i}`))
         botNames.push(`BOT_${i}`)
     }
     console.log(`Created ${botCount} bots. Type 'quit' to exit.`);
