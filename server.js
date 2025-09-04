@@ -15,8 +15,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Configure your default Minecraft connection/version here
 const manager = new BotManager({
-  host: 'localhost',
-  port: 25565,
+  host: 'bot_testing.aternos.me',
+  port: 63707,
   version: '1.21.1',
   viewerBasePort: 3000
 });
