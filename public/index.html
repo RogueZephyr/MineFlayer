@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Minecraft Bot Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg:#0f1115; --panel:#171a21; --muted:#9aa4b2; --accent:#4f8cff;
+      --ok:#2ecc71; --warn:#f1c40f; --bad:#e74c3c;
+      --grid-cols: 2;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font:14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:#e6e6e6; }
+    header { padding:.75rem 1rem; border-bottom:1px solid #ffffff1a; display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    header h1 { font-size:1rem; margin:0; opacity:.9; }
+    header .spacer { flex:1; }
+    header .btn { background:var(--panel); border:1px solid #ffffff1a; color:#fff; padding:.4rem .7rem; border-radius:6px; cursor:pointer; }
+    header .btn:hover { border-color:#ffffff33; }
+    header input[type="number"] { width:6rem; padding:.35rem .5rem; border-radius:6px; border:1px solid #ffffff1a; background:#10131a; color:#fff; }
+    main { display:grid; grid-template-columns: 340px 1fr; gap:12px; padding:12px; min-height:calc(100vh - 58px); }
+    @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+    .panel { background:var(--panel); border:1px solid #ffffff1a; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
+    .panel h2 { margin:0; padding:.6rem .8rem; border-bottom:1px solid #ffffff1a; font-size:.95rem; background:#0000001a; display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    .panel .content { padding:.75rem; display:flex; flex-direction:column; gap:.6rem; }
+    .row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+    label { display:flex; flex-direction:column; gap:.35rem; font-size:.9rem; color:var(--muted); }
+    select, button, input[type="text"], input[type="number"] { padding:.45rem .55rem; border-radius:6px; border:1px solid #ffffff1a; background:#10131a; color:#fff; }
+    button { background:#182033; cursor:pointer; }
+    button:hover { background:#1d2945; }
+    .status-dot { width:.6rem; height:.6rem; border-radius:50%; display:inline-block; margin-right:.4rem; }
+    .ok { background:var(--ok); } .warn { background:var(--warn); } .bad { background:var(--bad); } .idle { background:#666; }
+    .terminal { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; background:#0b0d12; color:#cfd7e3; height:230px; overflow:auto; padding:.5rem; border:1px solid #ffffff1a; border-radius:8px; }
+    .log-line { white-space: pre-wrap; margin: 0; }
+    .log-time { color:#7f8a9a; }
+    .log-bot { color:#9ad1ff; }
+    .log-info { color:#cfe8ff; } .log-warn { color:#ffd580; } .log-error { color:#ff9aa2; }
+    .muted { color: var(--muted); }
+
+    /* Viewer */
+    .viewer-controls { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+    .viewer-wrap { position:relative; flex:1; min-height: 320px; aspect-ratio: 16/9; background:#0e0f13; border:1px solid #ffffff1a; border-radius:8px; overflow:hidden; }
+    .viewer-iframe { width:100%; height:100%; border:0; display:block; }
+    .telemetry { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:.4rem; }
+    .telemetry .card { background:#0e1420; border:1px solid #ffffff1a; border-radius:8px; padding:.5rem .6rem; }
+    .telemetry .title { font-size:.8rem; color:#c3ccda; }
+    .telemetry .value { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.95rem; }
+
+    /* Grid mode */
+    .grid-wrap { display:grid; grid-template-columns: repeat(var(--grid-cols), minmax(220px, 1fr)); gap:8px; width:100%; }
+    .tile { position:relative; background:#0e0f13; border:1px solid #ffffff1a; border-radius:8px; overflow:hidden; min-height:160px; aspect-ratio:16/9; }
+    .tile .viewer-iframe { width:100%; height:100%; border:0; display:block; }
+    .tile .meta {
+      position:absolute; left:6px; top:6px; background:#00000088; backdrop-filter: blur(2px);
+      color:#fff; font-size:12px; padding:.25rem .4rem; border-radius:6px; border:1px solid #ffffff33;
+    }
+    .tile .meta .name { font-weight:600; }
+    .tile .meta .dim { opacity:.85; }
+    .tile .meta .health { color:#ff7a7a; margin-left:.35rem; }
+    .tile .actions { position:absolute; right:6px; top:6px; display:flex; gap:6px; }
+    .pill-btn { background:#00000088; border:1px solid #ffffff33; color:#fff; padding:.2rem .45rem; border-radius:999px; font-size:12px; cursor:pointer; }
+    .pill-btn:hover { background:#000000aa; }
+
+    .controls-small { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+    .range { accent-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Minecraft Bot Dashboard</h1>
+    <div class="spacer"></div>
+    <div class="row">
+      <input id="spawnCount" type="number" min="1" value="1" />
+      <button id="spawnBtn" class="btn">Spawn</button>
+      <button id="killAllBtn" class="btn">Kill All</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>
+        Bots
+        <span class="muted" id="botCount"></span>
+      </h2>
+      <div class="content">
+        <label>
+          Select bot
+          <select id="botSelect" size="10" aria-label="Bots"></select>
+        </label>
+        <div class="row">
+          <input id="customName" type="text" placeholder="Custom name (optional)" />
+          <button id="spawnOneBtn">Spawn One</button>
+          <button id="killSelectedBtn">Kill Selected</button>
+        </div>
+        <div class="row">
+          <button id="pinSelectedBtn">Pin Selected</button>
+          <button id="unpinSelectedBtn">Unpin Selected</button>
+          <span class="muted" id="pinCount"></span>
+        </div>
+
+        <div class="telemetry" id="telemetryCards">
+          <div class="card">
+            <div class="title">Bot</div>
+            <div class="value" id="tName">—</div>
+          </div>
+          <div class="card">
+            <div class="title">Position (x, y, z)</div>
+            <div class="value" id="tPos">—</div>
+          </div>
+          <div class="card">
+            <div class="title">Health / Food</div>
+            <div class="value" id="tVitals">—</div>
+          </div>
+          <div class="card">
+            <div class="title">Dimension</div>
+            <div class="value" id="tDim">—</div>
+          </div>
+        </div>
+
+        <label class="row">
+          <input id="filterSelected" type="checkbox" />
+          <span>Show logs from selected bot only</span>
+        </label>
+        <div class="terminal" id="terminal" aria-live="polite"></div>
+        <div class="controls-small">
+          <input id="chatInput" type="text" placeholder="Type chat or /command and press Enter" style="flex:1;" />
+          <label class="row" style="gap:.35rem;">
+            <input id="chatToPinned" type="checkbox" />
+            <span>To pinned</span>
+          </label>
+          <button id="chatSendBtn">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Viewer</h2>
+      <div class="content">
+        <div class="viewer-controls">
+          <label class="row" style="gap:.35rem;">
+            Mode:
+            <select id="viewerMode">
+              <option value="single">Single</option>
+              <option value="grid">Grid</option>
+            </select>
+          </label>
+          <label class="row" style="gap:.35rem;">
+            Grid columns:
+            <input id="gridCols" class="range" type="range" min="1" max="4" value="2" />
+            <span id="gridColsVal" class="muted">2</span>
+          </label>
+          <span class="muted">Viewer auto-switches to the selected bot (Single mode) or displays pinned bots (Grid mode).</span>
+        </div>
+
+        <!-- Single viewer -->
+        <div id="singleWrap" class="viewer-wrap">
+          <iframe id="viewer" class="viewer-iframe" title="Bot viewer"></iframe>
+        </div>
+
+        <!-- Grid viewer -->
+        <div id="gridWrap" class="grid-wrap" style="display:none;"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
