@@ -401,38 +401,79 @@ function setupChatCommands() {
     // Don't respond to own messages
     if (username === bot.username) return
 
-    console.log(`Received chat from ${username}: ${message}`)
+    // Debug: Log raw message details
+    console.log(`Raw chat event - Username: "${username}", Message: "${message}"`)
+    console.log(`Message type: ${typeof message}, Message length: ${message ? message.length : 'undefined'}`)
 
-    const command = message.toLowerCase().trim()
+    // Handle undefined/null messages
+    if (!message) {
+      console.log('Received empty message, ignoring')
+      return
+    }
+
+    // Strip formatting and clean the message
+    let cleanMessage = message.toString()
+
+    // Remove Minecraft formatting codes (like §a, §f, etc.)
+    cleanMessage = cleanMessage.replace(/§[0-9a-fk-or]/g, '')
+
+    // Remove any other special characters that might cause issues
+    cleanMessage = cleanMessage.replace(/[^\w\s]/g, '').trim()
+
+    console.log(`Cleaned message: "${cleanMessage}"`)
+
+    const command = cleanMessage.toLowerCase().trim()
+
+    // Additional debugging
+    console.log(`Processing command: "${command}"`)
 
     switch (command) {
       case 'mine status':
+      case 'status':
+        console.log('Executing: mine status')
         showMiningStatus()
         break
       case 'stop mining':
+      case 'stop':
+        console.log('Executing: stop mining')
         setState('idle')
         bot.pathfinder.setGoal(null)
         bot.chat('Mining stopped')
         break
       case 'start mining':
+      case 'start':
+        console.log('Executing: start mining')
         setState('scanning')
         bot.chat('Mining started')
         break
       case 'find chests':
+      case 'chests':
+        console.log('Executing: find chests')
         findNearbyChests()
         bot.chat(`Found ${nearbyChests.length} chests nearby`)
         break
       default:
-        // Handle partial matches for debugging
+        console.log(`Unknown command: "${command}"`)
+        // Try partial matching for common words
         if (command.includes('status')) {
+          console.log('Partial match: status')
           showMiningStatus()
+        } else if (command.includes('stop')) {
+          console.log('Partial match: stop')
+          setState('idle')
+          bot.pathfinder.setGoal(null)
+          bot.chat('Mining stopped')
+        } else if (command.includes('start')) {
+          console.log('Partial match: start')
+          setState('scanning')
+          bot.chat('Mining started')
         }
     }
   })
 
   // Add a test command to verify chat is working
   setTimeout(() => {
-    console.log('Chat commands initialized. Test with: "mine status"')
+    console.log('Chat commands initialized. Test with: "mine status", "status", "start", "stop", or "chests"')
   }, 5000)
 }
 
