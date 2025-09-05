@@ -163,6 +163,15 @@ Currently, no automated tests are implemented. Manual testing is recommended:
 1. **Connection Failed**: Ensure Minecraft server is running and accessible
 2. **Viewer Not Loading**: Check that Prismarine Viewer ports are available
 3. **Socket.IO Errors**: Verify no firewall blocking WebSocket connections
+4. **Chat Commands Not Working**: If using client-side mods like "No Chat Report", chat messages may appear as undefined/empty. This mod interferes with chat message processing. Try disabling the mod or using a different client.
+
+### Chat Command Issues
+- **Symptom**: Chat commands appear as invisible/undefined in console
+- **Cause**: Client-side mods like "No Chat Report" can interfere with chat message processing
+- **Solution**:
+  - Disable the "No Chat Report" mod
+  - Use a vanilla Minecraft client
+  - Check console logs for detailed JSON message structure debugging
 
 ### Logs
 Check the terminal output and dashboard logs for error messages and debugging information.

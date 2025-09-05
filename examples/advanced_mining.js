@@ -79,7 +79,16 @@ bot.once('spawn', () => {
   setupChatCommands()
 
   bot.chat('Advanced Mining Bot ready! I will automatically mine valuable ores and manage resources.')
-  setState('scanning')
+
+  // First, check for ores right in front of the bot
+  checkForImmediateOres()
+
+  // If no immediate ores found, start scanning
+  if (miningTargets.length === 0) {
+    setState('scanning')
+  } else {
+    setState('mining')
+  }
 })
 
 // State machine
@@ -106,42 +115,55 @@ function setState(newState) {
   }
 }
 
-// Scanning for mining targets
+// Scanning for mining targets using Mineflayer's efficient findBlocks method
 function startScanning() {
-  console.log('Scanning for valuable ores...')
+  console.log('Scanning for valuable ores using findBlocks...')
 
   miningTargets = []
   const botPos = bot.entity.position
 
-  // Scan in expanding circles
-  for (let radius = 5; radius <= CONFIG.MINING_RADIUS; radius += 5) {
-    for (let angle = 0; angle < 360; angle += 30) {
-      const radian = (angle * Math.PI) / 180
-      const x = Math.round(botPos.x + radius * Math.cos(radian))
-      const z = Math.round(botPos.z + radius * Math.sin(radian))
-
-      // Scan vertically around this position
-      for (let y = Math.max(1, botPos.y - 20); y <= Math.min(255, botPos.y + 20); y++) {
-        const block = bot.blockAt(new Vec3(x, y, z))
-        if (block && CONFIG.VALUABLE_ORES.includes(block.name)) {
-          miningTargets.push({
-            position: new Vec3(x, y, z),
-            type: block.name,
-            distance: botPos.distanceTo(new Vec3(x, y, z))
-          })
-        }
-      }
+  // Use Mineflayer's efficient findBlocks method for each ore type
+  for (const oreName of CONFIG.VALUABLE_ORES) {
+    const blockId = bot.registry.blocksByName[oreName]?.id
+    if (!blockId) {
+      console.log(`Warning: ${oreName} not found in registry`)
+      continue
     }
 
-    // Limit targets to prevent overload
-    if (miningTargets.length >= 10) break
+    try {
+      // Find blocks using Mineflayer's optimized algorithm
+      const blocks = bot.findBlocks({
+        matching: [blockId],
+        maxDistance: CONFIG.MINING_RADIUS,
+        count: 10 // Limit per ore type to prevent overload
+      })
+
+      console.log(`Found ${blocks.length} ${oreName} blocks`)
+
+      // Convert to our target format
+      for (const blockPos of blocks) {
+        const distance = botPos.distanceTo(blockPos)
+        miningTargets.push({
+          position: blockPos,
+          type: oreName,
+          distance: distance
+        })
+      }
+    } catch (error) {
+      console.log(`Error finding ${oreName}: ${error.message}`)
+    }
   }
 
-  // Sort by distance
+  // Sort by distance (closest first)
   miningTargets.sort((a, b) => a.distance - b.distance)
 
   if (miningTargets.length > 0) {
-    console.log(`Found ${miningTargets.length} mining targets`)
+    console.log(`\n=== SCAN COMPLETE ===`)
+    console.log(`Found ${miningTargets.length} mining targets:`)
+    miningTargets.forEach((target, index) => {
+      console.log(`${index + 1}. ${target.type} at ${Math.round(target.position.x)}, ${Math.round(target.position.y)}, ${Math.round(target.position.z)} (${target.distance.toFixed(1)} blocks away)`)
+    })
+    console.log(`\nStarting with closest target: ${miningTargets[0].type} (${miningTargets[0].distance.toFixed(1)} blocks away)`)
     setState('mining')
   } else {
     console.log('No valuable ores found in scan area')
@@ -159,8 +181,40 @@ function startMining() {
   currentTarget = miningTargets.shift()
   console.log(`Mining ${currentTarget.type} at ${currentTarget.position}`)
 
+  // Clear any existing goals first
+  bot.pathfinder.setGoal(null)
+
+  // Set new goal
   const goal = new GoalBlock(currentTarget.position.x, currentTarget.position.y, currentTarget.position.z)
   bot.pathfinder.setGoal(goal)
+
+  // Verify movement started
+  setTimeout(() => {
+    if (currentState === 'mining' && currentTarget) {
+      const distance = bot.entity.position.distanceTo(currentTarget.position)
+      console.log(`Distance to target: ${distance.toFixed(2)} blocks`)
+
+      if (distance > 3) {
+        console.log('Bot may not be moving, checking path...')
+        // Force a path update check
+        bot.pathfinder.stop()
+        setTimeout(() => {
+          if (currentState === 'mining') {
+            console.log('Retrying path to target...')
+            bot.pathfinder.setGoal(goal)
+          }
+        }, 1000)
+      }
+    }
+  }, 3000) // Check after 3 seconds
+
+  // Set a timeout for mining operation
+  setTimeout(() => {
+    if (currentState === 'mining' && currentTarget) {
+      console.log('Mining timeout reached, moving to next target')
+      setState('mining') // Try next target
+    }
+  }, 30000) // 30 second timeout per mining operation
 }
 
 // Return to base when inventory is full
@@ -189,31 +243,82 @@ function depositItems() {
 
 // Event handlers
 function setupEventHandlers() {
+  // Position tracking for movement verification
+  let lastPosition = null
+  let stuckCounter = 0
+
+  setInterval(() => {
+    if (bot.entity && currentState === 'mining') {
+      const currentPos = bot.entity.position
+      if (lastPosition) {
+        const distance = currentPos.distanceTo(lastPosition)
+        if (distance < 0.1) { // Bot hasn't moved much
+          stuckCounter++
+          if (stuckCounter >= 5) { // Stuck for 5 seconds
+            console.log('Bot appears stuck, resetting pathfinder')
+            bot.pathfinder.stop()
+            setTimeout(() => {
+              if (currentState === 'mining' && currentTarget) {
+                const goal = new GoalBlock(currentTarget.position.x, currentTarget.position.y, currentTarget.position.z)
+                bot.pathfinder.setGoal(goal)
+                stuckCounter = 0
+              }
+            }, 1000)
+          }
+        } else {
+          stuckCounter = 0
+        }
+      }
+      lastPosition = currentPos.clone()
+    }
+  }, 1000) // Check every second
+
   // Pathfinding events
   bot.on('goal_reached', (goal) => {
-    console.log('Goal reached')
+    console.log('Goal reached successfully!')
+    stuckCounter = 0 // Reset stuck counter
 
     switch (currentState) {
       case 'mining':
         if (currentTarget) {
+          console.log(`Reached mining target: ${currentTarget.type}`)
           mineBlock(currentTarget.position)
         }
         break
       case 'returning':
+        console.log('Reached base location')
         setState('depositing')
         break
       case 'depositing':
+        console.log('Reached deposit location')
         performDeposit()
         break
     }
   })
 
   bot.on('path_update', (results) => {
+    console.log(`Path update: ${results.status}`)
     if (results.status === 'noPath') {
-      console.log('No path found, skipping target')
+      console.log('No path found to target, skipping...')
       if (currentState === 'mining') {
         setState('mining') // Try next target
       }
+    } else if (results.status === 'success') {
+      console.log('Path found successfully')
+    } else if (results.status === 'partial') {
+      console.log('Partial path found')
+    }
+  })
+
+  bot.on('path_reset', (reason) => {
+    console.log(`Path reset: ${reason}`)
+  })
+
+  // Movement events
+  bot.on('move', () => {
+    // Bot is moving, reset stuck counter
+    if (currentState === 'mining') {
+      stuckCounter = 0
     }
   })
 
@@ -395,79 +500,121 @@ async function performDeposit() {
   setState('scanning')
 }
 
+// Chat message logger (following Mineflayer best practices)
+function chatLog(username, ...msg) {
+  if (username !== bot.username) {
+    console.log(`[${username}]`, ...msg)
+  }
+}
+
 // Chat commands
 function setupChatCommands() {
-  bot.on('chat', (username, message) => {
+  bot.on('chat', (username, jsonMsg) => {
+    // Log all chat messages first (following the exact pattern from GitHub)
+    chatLog(username, jsonMsg)
+
     // Don't respond to own messages
     if (username === bot.username) return
 
-    // Debug: Log raw message details
-    console.log(`Raw chat event - Username: "${username}", Message: "${message}"`)
-    console.log(`Message type: ${typeof message}, Message length: ${message ? message.length : 'undefined'}`)
+    // Debug: Log the raw jsonMsg structure
+    console.log('Raw jsonMsg:', JSON.stringify(jsonMsg, null, 2))
 
-    // Handle undefined/null messages
-    if (!message) {
-      console.log('Received empty message, ignoring')
-      return
-    }
+    // Extract text from JSON message object
+    let messageText = ''
 
-    // Strip formatting and clean the message
-    let cleanMessage = message.toString()
+    try {
+      if (typeof jsonMsg === 'string') {
+        messageText = jsonMsg
+      } else if (jsonMsg && typeof jsonMsg === 'object') {
+        // Try different ways to extract text
+        if (jsonMsg.text) {
+          messageText = jsonMsg.text
+        } else if (jsonMsg.translate) {
+          // Handle translated messages
+          messageText = jsonMsg.translate
+        } else if (Array.isArray(jsonMsg.extra)) {
+          // Handle complex message objects with extra formatting
+          messageText = jsonMsg.extra.map(part => {
+            if (typeof part === 'string') return part
+            if (part && part.text) return part.text
+            return ''
+          }).join('')
+        } else {
+          // Fallback: try to stringify and see if it contains text
+          const str = JSON.stringify(jsonMsg)
+          console.log('JSON stringified:', str)
+        }
+      }
 
-    // Remove Minecraft formatting codes (like §a, §f, etc.)
-    cleanMessage = cleanMessage.replace(/§[0-9a-fk-or]/g, '')
+      console.log(`Extracted message text: "${messageText}"`)
 
-    // Remove any other special characters that might cause issues
-    cleanMessage = cleanMessage.replace(/[^\w\s]/g, '').trim()
+      // Handle empty messages
+      if (!messageText || messageText.trim() === '') {
+        console.log('Received empty message text, ignoring')
+        return
+      }
 
-    console.log(`Cleaned message: "${cleanMessage}"`)
+      // Clean the message
+      let cleanMessage = messageText.toString()
 
-    const command = cleanMessage.toLowerCase().trim()
+      // Remove Minecraft formatting codes (like §a, §f, etc.)
+      cleanMessage = cleanMessage.replace(/§[0-9a-fk-or]/g, '')
 
-    // Additional debugging
-    console.log(`Processing command: "${command}"`)
+      // Trim whitespace
+      cleanMessage = cleanMessage.trim()
 
-    switch (command) {
-      case 'mine status':
-      case 'status':
-        console.log('Executing: mine status')
-        showMiningStatus()
-        break
-      case 'stop mining':
-      case 'stop':
-        console.log('Executing: stop mining')
-        setState('idle')
-        bot.pathfinder.setGoal(null)
-        bot.chat('Mining stopped')
-        break
-      case 'start mining':
-      case 'start':
-        console.log('Executing: start mining')
-        setState('scanning')
-        bot.chat('Mining started')
-        break
-      case 'find chests':
-      case 'chests':
-        console.log('Executing: find chests')
-        findNearbyChests()
-        bot.chat(`Found ${nearbyChests.length} chests nearby`)
-        break
-      default:
-        console.log(`Unknown command: "${command}"`)
-        // Try partial matching for common words
-        if (command.includes('status')) {
-          console.log('Partial match: status')
+      console.log(`Cleaned message: "${cleanMessage}"`)
+
+      const command = cleanMessage.toLowerCase().trim()
+
+      console.log(`Processing command: "${command}"`)
+
+      switch (command) {
+        case 'mine status':
+        case 'status':
+          console.log('Executing: mine status')
           showMiningStatus()
-        } else if (command.includes('stop')) {
-          console.log('Partial match: stop')
+          break
+        case 'stop mining':
+        case 'stop':
+          console.log('Executing: stop mining')
           setState('idle')
           bot.pathfinder.setGoal(null)
           bot.chat('Mining stopped')
-        } else if (command.includes('start')) {
-          console.log('Partial match: start')
+          break
+        case 'start mining':
+        case 'start':
+          console.log('Executing: start mining')
           setState('scanning')
           bot.chat('Mining started')
-        }
+          break
+        case 'find chests':
+        case 'chests':
+          console.log('Executing: find chests')
+          findNearbyChests()
+          bot.chat(`Found ${nearbyChests.length} chests nearby`)
+          break
+        default:
+          console.log(`Unknown command: "${command}"`)
+          // Try partial matching for common words
+          if (command.includes('status')) {
+            console.log('Partial match: status')
+            showMiningStatus()
+          } else if (command.includes('stop')) {
+            console.log('Partial match: stop')
+            setState('idle')
+            bot.pathfinder.setGoal(null)
+            bot.chat('Mining stopped')
+          } else if (command.includes('start')) {
+            console.log('Partial match: start')
+            setState('scanning')
+            bot.chat('Mining started')
+          }
+      }
+
+    } catch (error) {
+      console.error('Error processing chat message:', error)
+      console.error('jsonMsg that caused error:', jsonMsg)
     }
   })
 
@@ -488,6 +635,50 @@ function showMiningStatus() {
   status += `Targets: ${miningTargets.length}`
 
   bot.chat(status)
+}
+
+// Check for ores immediately around the bot using findBlocks
+function checkForImmediateOres() {
+  console.log('Checking for ores right in front of the bot using findBlocks...')
+  const botPos = bot.entity.position
+  let immediateOresFound = 0
+
+  // Use findBlocks with very short range for immediate ores
+  for (const oreName of CONFIG.VALUABLE_ORES) {
+    const blockId = bot.registry.blocksByName[oreName]?.id
+    if (!blockId) continue
+
+    try {
+      // Find blocks within very close range (5 blocks)
+      const blocks = bot.findBlocks({
+        matching: [blockId],
+        maxDistance: 5,
+        count: 5 // Limit to prevent overload
+      })
+
+      // Convert to our target format
+      for (const blockPos of blocks) {
+        const distance = botPos.distanceTo(blockPos)
+        miningTargets.push({
+          position: blockPos,
+          type: oreName,
+          distance: distance
+        })
+        console.log(`Found immediate ${oreName} at distance ${distance.toFixed(1)} blocks`)
+        immediateOresFound++
+      }
+    } catch (error) {
+      console.log(`Error finding immediate ${oreName}: ${error.message}`)
+    }
+  }
+
+  // Sort immediate ores by distance
+  if (immediateOresFound > 0) {
+    miningTargets.sort((a, b) => a.distance - b.distance)
+    console.log(`Found ${immediateOresFound} ores immediately around the bot!`)
+  } else {
+    console.log('No ores found immediately around the bot')
+  }
 }
 
 // Initialize chest detection - only scan when needed
