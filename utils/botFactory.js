@@ -2,6 +2,7 @@
 const EventEmitter = require('events');
 const mineflayer = require('mineflayer');
 const { mineflayer: mineflayerViewer } = require('prismarine-viewer');
+const MovementController = require('../systems/movementController');
 
 class MCBot {
   constructor(opts) {
@@ -31,6 +32,7 @@ class MCBot {
       version: this.version
     });
 
+    this.movement = new MovementController(this.bot);
     this._wireEvents();
   }
 
@@ -180,6 +182,27 @@ class MCBot {
     try { this.bot.chat('Goodbye!'); } catch (_) {}
     try { this.bot.viewer?.close(); } catch (_) {}
     try { this.bot.quit(); } catch (_) {}
+  }
+
+  // Movement methods - delegate to MovementController
+  async walkToPosition(x, y, z) {
+    return this.movement.walkToPosition(x, y, z);
+  }
+
+  async jump() {
+    return this.movement.jump();
+  }
+
+  async sprintTo(x, z) {
+    return this.movement.sprintTo(x, z);
+  }
+
+  async navigateTo(x, y, z) {
+    return this.movement.navigateTo(x, y, z);
+  }
+
+  stopMovement() {
+    this.movement.stop();
   }
 }
 

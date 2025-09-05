@@ -352,4 +352,70 @@
       sendChat();
     }
   });
+
+  // Movement controls
+  const moveX = document.getElementById('moveX');
+  const moveY = document.getElementById('moveY');
+  const moveZ = document.getElementById('moveZ');
+  const moveBtn = document.getElementById('moveBtn');
+  const jumpBtn = document.getElementById('jumpBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const sprintX = document.getElementById('sprintX');
+  const sprintZ = document.getElementById('sprintZ');
+  const sprintBtn = document.getElementById('sprintBtn');
+  const navX = document.getElementById('navX');
+  const navY = document.getElementById('navY');
+  const navZ = document.getElementById('navZ');
+  const navBtn = document.getElementById('navBtn');
+
+  moveBtn.addEventListener('click', () => {
+    const id = selectedId;
+    if (!id) return alert('No bot selected');
+    const x = parseFloat(moveX.value);
+    const y = parseFloat(moveY.value);
+    const z = parseFloat(moveZ.value);
+    if (isNaN(x) || isNaN(y) || isNaN(z)) return alert('Invalid coordinates');
+    socket.emit('moveBot', { id, x, y, z }, (ack) => {
+      if (!ack?.ok) alert(`Move failed: ${ack?.error || 'unknown error'}`);
+    });
+  });
+
+  jumpBtn.addEventListener('click', () => {
+    const id = selectedId;
+    if (!id) return alert('No bot selected');
+    socket.emit('jumpBot', { id }, (ack) => {
+      if (!ack?.ok) alert(`Jump failed: ${ack?.error || 'unknown error'}`);
+    });
+  });
+
+  stopBtn.addEventListener('click', () => {
+    const id = selectedId;
+    if (!id) return alert('No bot selected');
+    socket.emit('stopBotMovement', { id }, (ack) => {
+      if (!ack?.ok) alert(`Stop failed: ${ack?.error || 'unknown error'}`);
+    });
+  });
+
+  sprintBtn.addEventListener('click', () => {
+    const id = selectedId;
+    if (!id) return alert('No bot selected');
+    const x = parseFloat(sprintX.value);
+    const z = parseFloat(sprintZ.value);
+    if (isNaN(x) || isNaN(z)) return alert('Invalid coordinates');
+    socket.emit('sprintBot', { id, x, z }, (ack) => {
+      if (!ack?.ok) alert(`Sprint failed: ${ack?.error || 'unknown error'}`);
+    });
+  });
+
+  navBtn.addEventListener('click', () => {
+    const id = selectedId;
+    if (!id) return alert('No bot selected');
+    const x = parseFloat(navX.value);
+    const y = parseFloat(navY.value);
+    const z = parseFloat(navZ.value);
+    if (isNaN(x) || isNaN(y) || isNaN(z)) return alert('Invalid coordinates');
+    socket.emit('navigateBot', { id, x, y, z }, (ack) => {
+      if (!ack?.ok) alert(`Navigate failed: ${ack?.error || 'unknown error'}`);
+    });
+  });
 })();

@@ -89,6 +89,57 @@ io.on('connection', (socket) => {
       cb?.({ ok: false, error: e.message });
     }
   });
+
+  // Movement commands
+  socket.on('moveBot', async ({ id, x, y, z } = {}, cb) => {
+    try {
+      if (!id) throw new Error('No bot id provided');
+      await manager.moveBot(id, x, y, z);
+      cb?.({ ok: true });
+    } catch (e) {
+      cb?.({ ok: false, error: e.message });
+    }
+  });
+
+  socket.on('jumpBot', async ({ id } = {}, cb) => {
+    try {
+      if (!id) throw new Error('No bot id provided');
+      await manager.jumpBot(id);
+      cb?.({ ok: true });
+    } catch (e) {
+      cb?.({ ok: false, error: e.message });
+    }
+  });
+
+  socket.on('sprintBot', async ({ id, x, z } = {}, cb) => {
+    try {
+      if (!id) throw new Error('No bot id provided');
+      await manager.sprintBot(id, x, z);
+      cb?.({ ok: true });
+    } catch (e) {
+      cb?.({ ok: false, error: e.message });
+    }
+  });
+
+  socket.on('navigateBot', async ({ id, x, y, z } = {}, cb) => {
+    try {
+      if (!id) throw new Error('No bot id provided');
+      await manager.navigateBot(id, x, y, z);
+      cb?.({ ok: true });
+    } catch (e) {
+      cb?.({ ok: false, error: e.message });
+    }
+  });
+
+  socket.on('stopBotMovement', async ({ id } = {}, cb) => {
+    try {
+      if (!id) throw new Error('No bot id provided');
+      manager.stopBotMovement(id);
+      cb?.({ ok: true });
+    } catch (e) {
+      cb?.({ ok: false, error: e.message });
+    }
+  });
 });
 
 server.listen(APP_PORT, () => {

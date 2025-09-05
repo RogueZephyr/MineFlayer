@@ -71,6 +71,36 @@ class BotManager extends EventEmitter {
     await bot.sendChat(text);
   }
 
+  async moveBot(id, x, y, z) {
+    const bot = this._bots.get(id);
+    if (!bot) throw new Error(`No such bot: ${id}`);
+    await bot.walkToPosition(x, y, z);
+  }
+
+  async jumpBot(id) {
+    const bot = this._bots.get(id);
+    if (!bot) throw new Error(`No such bot: ${id}`);
+    await bot.jump();
+  }
+
+  async sprintBot(id, x, z) {
+    const bot = this._bots.get(id);
+    if (!bot) throw new Error(`No such bot: ${id}`);
+    await bot.sprintTo(x, z);
+  }
+
+  async navigateBot(id, x, y, z) {
+    const bot = this._bots.get(id);
+    if (!bot) throw new Error(`No such bot: ${id}`);
+    await bot.navigateTo(x, y, z);
+  }
+
+  stopBotMovement(id) {
+    const bot = this._bots.get(id);
+    if (!bot) throw new Error(`No such bot: ${id}`);
+    bot.stopMovement();
+  }
+
   _nextUsername() {
     let name;
     do {
