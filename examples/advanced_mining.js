@@ -122,7 +122,7 @@ function startScanning() {
 
       // Scan vertically around this position
       for (let y = Math.max(1, botPos.y - 20); y <= Math.min(255, botPos.y + 20); y++) {
-        const block = bot.blockAt(bot.world.getColumnAt(x, z).getBlock(new Vec3(x, y, z)))
+        const block = bot.blockAt(new Vec3(x, y, z))
         if (block && CONFIG.VALUABLE_ORES.includes(block.name)) {
           miningTargets.push({
             position: new Vec3(x, y, z),
