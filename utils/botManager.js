@@ -71,30 +71,37 @@ class BotManager extends EventEmitter {
     await bot.sendChat(text);
   }
 
+  // Movement control methods - Delegate to individual bots
+
+  // Move specific bot to coordinates using pathfinding
   async moveBot(id, x, y, z) {
     const bot = this._bots.get(id);
     if (!bot) throw new Error(`No such bot: ${id}`);
     await bot.walkToPosition(x, y, z);
   }
 
+  // Make specific bot jump
   async jumpBot(id) {
     const bot = this._bots.get(id);
     if (!bot) throw new Error(`No such bot: ${id}`);
     await bot.jump();
   }
 
+  // Make specific bot sprint to coordinates
   async sprintBot(id, x, z) {
     const bot = this._bots.get(id);
     if (!bot) throw new Error(`No such bot: ${id}`);
     await bot.sprintTo(x, z);
   }
 
+  // Advanced navigation for specific bot with obstacle avoidance
   async navigateBot(id, x, y, z) {
     const bot = this._bots.get(id);
     if (!bot) throw new Error(`No such bot: ${id}`);
     await bot.navigateTo(x, y, z);
   }
 
+  // Stop movement for specific bot
   stopBotMovement(id) {
     const bot = this._bots.get(id);
     if (!bot) throw new Error(`No such bot: ${id}`);

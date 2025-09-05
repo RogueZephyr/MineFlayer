@@ -185,22 +185,28 @@ class MCBot {
   }
 
   // Movement methods - delegate to MovementController
+
+  // Move bot to specific coordinates using pathfinding
   async walkToPosition(x, y, z) {
     return this.movement.walkToPosition(x, y, z);
   }
 
+  // Make bot jump (handles ground check and timing)
   async jump() {
     return this.movement.jump();
   }
 
+  // Sprint to coordinates (faster movement, uses more hunger)
   async sprintTo(x, z) {
     return this.movement.sprintTo(x, z);
   }
 
+  // Advanced navigation with obstacle avoidance
   async navigateTo(x, y, z) {
     return this.movement.navigateTo(x, y, z);
   }
 
+  // Stop all movement immediately
   stopMovement() {
     this.movement.stop();
   }

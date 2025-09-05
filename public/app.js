@@ -353,7 +353,9 @@
     }
   });
 
-  // Movement controls
+  // Movement controls - Handle dashboard movement buttons
+
+  // Get references to movement control elements
   const moveX = document.getElementById('moveX');
   const moveY = document.getElementById('moveY');
   const moveZ = document.getElementById('moveZ');
@@ -368,6 +370,7 @@
   const navZ = document.getElementById('navZ');
   const navBtn = document.getElementById('navBtn');
 
+  // Move bot to entered coordinates using pathfinding
   moveBtn.addEventListener('click', () => {
     const id = selectedId;
     if (!id) return alert('No bot selected');
@@ -380,6 +383,7 @@
     });
   });
 
+  // Make selected bot jump
   jumpBtn.addEventListener('click', () => {
     const id = selectedId;
     if (!id) return alert('No bot selected');
@@ -388,6 +392,7 @@
     });
   });
 
+  // Stop all movement for selected bot
   stopBtn.addEventListener('click', () => {
     const id = selectedId;
     if (!id) return alert('No bot selected');
@@ -396,6 +401,7 @@
     });
   });
 
+  // Sprint bot to coordinates (faster but uses hunger)
   sprintBtn.addEventListener('click', () => {
     const id = selectedId;
     if (!id) return alert('No bot selected');
@@ -407,6 +413,7 @@
     });
   });
 
+  // Advanced navigation with obstacle avoidance
   navBtn.addEventListener('click', () => {
     const id = selectedId;
     if (!id) return alert('No bot selected');

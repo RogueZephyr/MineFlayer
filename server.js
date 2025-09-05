@@ -90,7 +90,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Movement commands
+  // Movement commands - Handle dashboard movement controls
+
+  // Move bot to specific coordinates with pathfinding
   socket.on('moveBot', async ({ id, x, y, z } = {}, cb) => {
     try {
       if (!id) throw new Error('No bot id provided');
@@ -101,6 +103,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Make selected bot jump
   socket.on('jumpBot', async ({ id } = {}, cb) => {
     try {
       if (!id) throw new Error('No bot id provided');
@@ -111,6 +114,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Sprint bot to coordinates (faster but uses hunger)
   socket.on('sprintBot', async ({ id, x, z } = {}, cb) => {
     try {
       if (!id) throw new Error('No bot id provided');
@@ -121,6 +125,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Advanced navigation with obstacle avoidance
   socket.on('navigateBot', async ({ id, x, y, z } = {}, cb) => {
     try {
       if (!id) throw new Error('No bot id provided');
@@ -131,6 +136,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Stop all movement for selected bot
   socket.on('stopBotMovement', async ({ id } = {}, cb) => {
     try {
       if (!id) throw new Error('No bot id provided');

@@ -1,16 +1,16 @@
-// utils/movementController.js
-// Pseudo-code templates for bot movement systems
-// This is a practice project, so these are high-level templates to build upon.
-// Implement these functions in the MCBot class or as separate modules.
+// MovementController - Handles all bot movement operations
+// Provides templates for walking, jumping, pathfinding, and navigation
+// Designed for learning and gradual implementation
 
 const Pathfinder = require("mineflayer-pathfinder")
 
 class MovementController {
+  // Constructor - Initialize movement controller with bot instance
   constructor(bot) {
-    this.bot = bot;
-    this.isMoving = false;
-    this.currentPath = [];
-    this.targetPosition = null;
+    this.bot = bot;                    // Reference to the MineFlayer bot
+    this.isMoving = false;             // Track if bot is currently moving
+    this.currentPath = [];             // Store current path waypoints
+    this.targetPosition = null;        // Store target destination
   }
 
   // Template: Basic walking movement
