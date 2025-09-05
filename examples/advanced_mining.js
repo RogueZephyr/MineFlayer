@@ -315,11 +315,17 @@ function equipBestPickaxe() {
 
 // Chest detection and management
 function findNearbyChests() {
-  nearbyChests = []
+  // Only scan if we haven't found chests recently or if we're in depositing state
+  if (nearbyChests.length > 0 && currentState !== 'depositing') {
+    return // Don't scan again if we already have chests
+  }
 
-  for (let x = -20; x <= 20; x++) {
-    for (let y = -5; y <= 5; y++) {
-      for (let z = -20; z <= 20; z++) {
+  nearbyChests = []
+  const scanRange = 10 // Reduced scan range
+
+  for (let x = -scanRange; x <= scanRange; x++) {
+    for (let y = -3; y <= 3; y++) {
+      for (let z = -scanRange; z <= scanRange; z++) {
         const block = bot.blockAt(bot.entity.position.offset(x, y, z))
         if (block && (block.name.includes('chest') || block.name.includes('barrel'))) {
           nearbyChests.push({
@@ -331,28 +337,71 @@ function findNearbyChests() {
     }
   }
 
-  console.log(`Found ${nearbyChests.length} storage containers`)
+  console.log(`Chest scan complete. Found ${nearbyChests.length} storage containers`)
 }
 
-function performDeposit() {
-  // Deposit valuable items
-  const valuableItems = bot.inventory.items().filter(item =>
-    CONFIG.VALUABLE_ORES.some(ore => item.name.includes(ore.replace('_ore', ''))) ||
-    ['diamond', 'gold_ingot', 'iron_ingot', 'emerald', 'coal'].includes(item.name)
-  )
+async function performDeposit() {
+  if (nearbyChests.length === 0) {
+    console.log('No chests available for depositing')
+    setState('scanning')
+    return
+  }
 
-  valuableItems.forEach(item => {
-    bot.tossStack(item)
-  })
+  // Find nearest chest
+  const botPos = bot.entity.position
+  nearbyChests.sort((a, b) => botPos.distanceTo(a.position) - botPos.distanceTo(b.position))
+  const nearestChest = nearbyChests[0]
 
-  console.log(`Deposited ${valuableItems.length} valuable item stacks`)
+  try {
+    // Open the chest
+    const chest = await bot.openChest(nearestChest.position)
+    console.log(`Opened ${nearestChest.type} at ${nearestChest.position}`)
+
+    // Get valuable items to deposit
+    const valuableItems = bot.inventory.items().filter(item =>
+      CONFIG.VALUABLE_ORES.some(ore => item.name.includes(ore.replace('_ore', ''))) ||
+      ['diamond', 'gold_ingot', 'iron_ingot', 'emerald', 'coal'].includes(item.name)
+    )
+
+    let depositedCount = 0
+    for (const item of valuableItems) {
+      try {
+        await chest.deposit(item.type, null, item.count)
+        console.log(`Deposited ${item.count}x ${item.name}`)
+        depositedCount++
+      } catch (err) {
+        console.log(`Failed to deposit ${item.name}: ${err.message}`)
+      }
+    }
+
+    // Close the chest
+    chest.close()
+    console.log(`Deposit complete. Deposited ${depositedCount} item stacks`)
+
+  } catch (err) {
+    console.log(`Failed to deposit items: ${err.message}`)
+    // Fallback to tossing items if chest interaction fails
+    const valuableItems = bot.inventory.items().filter(item =>
+      CONFIG.VALUABLE_ORES.some(ore => item.name.includes(ore.replace('_ore', ''))) ||
+      ['diamond', 'gold_ingot', 'iron_ingot', 'emerald', 'coal'].includes(item.name)
+    )
+
+    valuableItems.forEach(item => {
+      bot.tossStack(item)
+    })
+    console.log(`Fallback: Tossed ${valuableItems.length} valuable item stacks`)
+  }
+
   setState('scanning')
 }
 
 // Chat commands
 function setupChatCommands() {
   bot.on('chat', (username, message) => {
+    // Don't respond to own messages
     if (username === bot.username) return
+
+    console.log(`Received chat from ${username}: ${message}`)
 
     const command = message.toLowerCase().trim()
 
@@ -373,8 +422,18 @@ function setupChatCommands() {
         findNearbyChests()
         bot.chat(`Found ${nearbyChests.length} chests nearby`)
         break
+      default:
+        // Handle partial matches for debugging
+        if (command.includes('status')) {
+          showMiningStatus()
+        }
     }
   })
+
+  // Add a test command to verify chat is working
+  setTimeout(() => {
+    console.log('Chat commands initialized. Test with: "mine status"')
+  }, 5000)
 }
 
 function showMiningStatus() {
@@ -390,12 +449,16 @@ function showMiningStatus() {
   bot.chat(status)
 }
 
-// Initialize chest detection
+// Initialize chest detection - only scan when needed
+let lastChestScan = 0
 setInterval(() => {
-  if (currentState !== 'idle') {
+  const now = Date.now()
+  // Only scan if we haven't scanned recently and we're not idle
+  if (currentState !== 'idle' && (now - lastChestScan) > CONFIG.CHEST_CHECK_INTERVAL) {
     findNearbyChests()
+    lastChestScan = now
   }
-}, CONFIG.CHEST_CHECK_INTERVAL)
+}, 5000) // Check every 5 seconds if we need to scan
 
 // Error handling
 bot.on('error', (err) => {
