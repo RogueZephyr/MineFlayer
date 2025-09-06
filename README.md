@@ -79,14 +79,33 @@ MineFlayer/
 ├── index.js                 # CLI entry point for spawning bots
 ├── server.js                # Express server with Socket.IO
 ├── package.json             # Project dependencies and scripts
-├── public/
+├── README.md                # This file
+├── API_REFERENCE.md         # API documentation
+├── CHEAT_SHEET.md           # Quick reference
+├── FAQ.md                   # Frequently asked questions
+├── .gitignore               # Git ignore file
+├── package-lock.json        # Lockfile for dependencies
+├── examples/                # Example scripts and features
+│   ├── advanced_mining.js
+│   ├── basic_movement_chat.js
+│   ├── block_detection_inventory.js
+│   ├── building_automation.js
+│   ├── chatlog.mjs
+│   ├── future_features.md
+│   ├── multi_bot_coordination.js
+│   └── pathfinding_viewer.js
+├── public/                  # Web dashboard files
 │   ├── index.html          # Dashboard HTML
 │   ├── style.css           # Dashboard styling
 │   └── app.js              # Frontend JavaScript
-└── utils/
+├── recordings/              # Directory for recordings
+├── screenshots/             # Directory for screenshots
+├── systems/                 # System modules
+│   └── movementController.js
+└── utils/                   # Utility modules
     ├── botFactory.js       # Individual bot implementation
     ├── botManager.js       # Multi-bot management
-    └── loadingBar.js       # Unused loading bar utility
+    └── loadingBar.js       # Loading bar utility
 ```
 
 ## Key Components
@@ -126,22 +145,7 @@ Modify `utils/botFactory.js` for:
 
 ## API Reference
 
-### Socket.IO Events
-
-#### Client → Server
-- `spawnBot({ username })`: Spawn a single bot
-- `spawnMany({ count })`: Spawn multiple bots
-- `killBot({ id })`: Kill a specific bot
-- `killAll()`: Kill all bots
-- `chat({ id, text })`: Send chat message to bot
-
-#### Server → Client
-- `init({ bots, logs })`: Initial state
-- `bot_added(info)`: Bot spawned
-- `bot_removed({ id })`: Bot killed
-- `bot_status({ id, status })`: Status update
-- `telemetry(payload)`: Telemetry data
-- `log(entry)`: Log entry
+See `API_REFERENCE.md` for detailed API documentation.
 
 ## Development
 
@@ -190,11 +194,14 @@ ISC License - See package.json for details
 
 ## Dependencies
 
-- **mineflayer**: Core Minecraft bot library
-- **prismarine-viewer**: Real-time bot viewer
-- **express**: Web server framework
-- **socket.io**: Real-time communication
-- **canvas**: Graphics rendering (for viewer)
+- **canvas**: ^3.2.0
+- **chalk**: ^5.6.0
+- **express**: ^5.1.0
+- **mineflayer**: ^4.32.0
+- **mineflayer-pathfinder**: ^2.4.5
+- **prismarine-viewer**: ^1.33.0
+- **readline**: 1.3.0
+- **socket.io**: ^4.8.1
 
 ## Roadmap
 
