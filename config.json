@@ -1,0 +1,24 @@
+{
+    "server": {
+        "host": "localhost",
+        "port": 25565,
+        "version": "1.21.1"
+    },
+
+    "webDashboard": {
+        "port": "8080",
+        "viewerBasePort": 3000
+    },
+
+    "bot": {
+        "defaultUsername": "BOT",
+        "autoReconnect": true,
+        "reconnectDelayMs": 10000
+    },
+
+    "logging": {
+        "level": "info",
+        "fileOutput": false,
+        "maxLogFiles": 5
+    }
+}

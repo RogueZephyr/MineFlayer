@@ -4,8 +4,11 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const BotManager = require('./utils/botManager');
+const configLoader = require('./utils/configLoader');
 
-const APP_PORT = process.env.APP_PORT ? Number(process.env.APP_PORT) : 8080;
+const config = configLoader.load();
+
+const APP_PORT = process.env.APP_PORT ? Number(process.env.APP_PORT) : config.webDashboard.port;
 
 const app = express();
 const server = http.createServer(app);
@@ -15,10 +18,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Configure your default Minecraft connection/version here
 const manager = new BotManager({
-  host: 'bot_testing.aternos.me',
-  port: 63707,
-  version: '1.21.1',
-  viewerBasePort: 3000
+  host: config.server.host,
+  port: config.server.port,
+  version: config.server.version,
+  viewerBasePort: config.webDashboard.viewerBasePort
 });
 
 // Pipe manager events to connected clients

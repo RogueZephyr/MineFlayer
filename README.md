@@ -217,7 +217,6 @@ ISC License - See package.json for details
 - [ ] Add automated tests
 - [ ] Implement bot pathfinding and automation
 - [ ] Add more telemetry metrics
-- [ ] Support for different Minecraft versions
 - [ ] User authentication for dashboard
 - [ ] Bot configuration profiles
 - [ ] Export/import bot settings

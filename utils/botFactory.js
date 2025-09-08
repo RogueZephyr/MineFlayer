@@ -3,19 +3,32 @@ const EventEmitter = require('events');
 const mineflayer = require('mineflayer');
 const { mineflayer: mineflayerViewer } = require('prismarine-viewer');
 const MovementController = require('../systems/movementController');
+const { log } = require('console');
+const configLoader = require('./configLoader');
+const MiningUtility = require('./minerUtils')
+
+//Load Configuration
+const config = configLoader.load();
+
+//load Mining Utilities
+const mining = new MiningUtility(this.bot, this.movement)
+
+
 
 class MCBot {
   constructor(opts) {
     this.id = opts.id || opts.username;
     this.username = opts.username;
-    this.host = opts.host;
-    this.port = opts.port;
-    this.version = opts.version;
+
+    //Use config to change
+    this.host = opts.host || config.server.host;
+    this.port = opts.port || config.server.port;
+    this.version = opts.version || config.server.version;
     this.viewerPort = Number(opts.viewerPort);
     this.viewerUrl = `http://localhost:${this.viewerPort}/`;
 
     this._shuttingDown = false;
-    this._reconnectDelayMs = 10_000;
+    this._reconnectDelayMs = config.bot.reconnectDelayMs;
     this._telemetryTimer = null;
     this.events = new EventEmitter(); // emits: log, status, telemetry
 
@@ -52,6 +65,7 @@ class MCBot {
     bot.once('spawn', () => {
       this._openViewer();
       this._startTelemetryLoop();
+      this.bot.mcData = require("minecraft-data", )(this.bot.version)
 
       // Simple path trace
       const path = [bot.entity.position.clone()];
@@ -74,6 +88,25 @@ class MCBot {
     // Relay in-game chat to logs
     bot.on('chat', (username, message) => {
       this._log('info', `[CHAT] <${username}> ${message}`);
+
+      const args = message.split(' ')
+      try {
+
+        //Gives you the item id of any block by name, example: "item_id iron_ore"
+        if (args[0] === 'item_id') {
+          const itemName = args[1]
+          const id = this.bot.mcData.itemsByName[itemName].id
+          this.sendChat(`The item id for ${args[1]} is ${id}`)
+        }
+
+        //Finds any block when asked in chat, example: "find iron_ore"
+        if (args[0] === 'find') {
+          const id = this.bot.mcData.blocksByName[args[1]].id
+          const block = this.bot.findBlock({matching: id})
+          this.bot.chat(`The Block is at: ${block.position}`)
+        }
+      } catch (err) {console.log(err)}
+      
     });
 
     bot.on('entityHurt', (entity) => {
@@ -82,7 +115,15 @@ class MCBot {
 
     bot.on('playerCollect', (collector, collected) => {
       if (collector.username === bot.username) {
-        bot.chat(`I picked up ${collected.displayName || 'an item'}!`);
+        
+        //bot.chat(`I picked up ${itemName || 'an item'}!`);
+        try {
+          const itemCollectedId = collected.metadata[8].itemId
+          this._log('info', `Picked up item ${itemCollectedId}`)
+          console.log(`Picked up item ${itemCollectedId}`)
+          const itemNameById = this.bot.mcData.itemById[itemCollectedId]
+          console.log(`Picked up ${itemNameById}`)
+        } catch (err) {console.log(err)}
       }
     });
 
@@ -106,7 +147,7 @@ class MCBot {
 
   _openViewer() {
     try {
-      mineflayerViewer(this.bot, { port: this.viewerPort, firstPerson: false });
+      mineflayerViewer(this.bot, { port: this.viewerPort, firstPerson: false, viewDistance: "12" });
       this._log('info', `Viewer at ${this.viewerUrl}`);
     } catch (err) {
       this._log('error', `Failed to start viewer on ${this.viewerPort}: ${err.message}`);

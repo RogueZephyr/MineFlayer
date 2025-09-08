@@ -1,11 +1,8 @@
 const MCBot = require('./utils/botFactory');
 const readline = require('readline');
+const configLoader = require('./utils/configLoader')
 
-const DEFAULTS = {
-  host: 'localhost',
-  port: 25565,
-  version: '1.21.1'
-};
+const config = configLoader.load()
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -24,15 +21,15 @@ function ask(query) {
       process.exit(1);
     }
 
-    const viewerStartPort = 3000;
+    const viewerStartPort = config.webDashboard.viewerBasePort;
     for (let i = 0; i < botCount; i++) {
-      const username = `BOT_${i}`;
+      const username = `${config.bot.defaultUsername}_${i}`;
       const viewerPort = viewerStartPort + i;
       const bot = new MCBot({
         username,
-        host: DEFAULTS.host,
-        port: DEFAULTS.port,
-        version: DEFAULTS.version,
+        host: config.server.host,
+        port: config.server.port,
+        version: config.server.version,
         viewerPort
       });
       bots.push(bot);
