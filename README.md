@@ -105,7 +105,9 @@ MineFlayer/
 └── utils/                   # Utility modules
     ├── botFactory.js       # Individual bot implementation
     ├── botManager.js       # Multi-bot management
-    └── loadingBar.js       # Loading bar utility
+    ├── configLoader.js     # Configuration management
+    ├── loadingBar.js       # Loading bar utility
+    └── minerUtils.js       # Mining utility functions
 ```
 
 ## Key Components
@@ -131,11 +133,16 @@ MineFlayer/
 ## Configuration
 
 ### Server Configuration
-Edit `server.js` to configure:
+Edit `config.json` to configure:
 - Minecraft server host and port
 - Minecraft version
 - Viewer base port
 - Application port (default: 8080)
+- Logging settings
+- Web dashboard settings
+- Bot settings
+
+Alternatively, you can still edit `server.js` for advanced configurations, but `config.json` is the recommended way for basic setup.
 
 ### Bot Configuration
 Modify `utils/botFactory.js` for:
@@ -202,6 +209,7 @@ ISC License - See package.json for details
 - **prismarine-viewer**: ^1.33.0
 - **readline**: 1.3.0
 - **socket.io**: ^4.8.1
+- **sqlite3**: ^5.1.7
 
 ## Roadmap
 
